@@ -8,6 +8,7 @@ type AuthState = {
   user: User | null
   role: AppRole
   isLoading: boolean
+  isRecoveryMode: boolean
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -16,6 +17,7 @@ export const useAuthStore = defineStore('auth', {
     user: null,
     role: null,
     isLoading: true,
+    isRecoveryMode: false,
   }),
 
   actions: {
@@ -29,11 +31,15 @@ export const useAuthStore = defineStore('auth', {
     setLoading(value: boolean) {
       this.isLoading = value
     },
+    setRecoveryMode(value: boolean) {
+      this.isRecoveryMode = value
+    },
     clear() {
       this.session = null
       this.user = null
       this.role = null
       this.isLoading = false
+      this.isRecoveryMode = false
     },
   },
 })

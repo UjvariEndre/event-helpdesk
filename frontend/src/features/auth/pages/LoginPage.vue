@@ -69,6 +69,9 @@ const errorMessage = computed(() => {
 
           <Button type="submit" label="Login" :loading="mutation.isPending.value" />
         </form>
+        <RouterLink to="/forgot-password" class="text-sm text-blue-600 hover:underline">
+          Forgot password?
+        </RouterLink>
       </template>
     </Card>
   </div>

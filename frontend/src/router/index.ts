@@ -1,5 +1,7 @@
 import AgentPage from '@/features/agent/pages/AgentPage.vue'
+import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage.vue'
 import LoginPage from '@/features/auth/pages/LoginPage.vue'
+import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage.vue'
 import EventsPage from '@/features/events/pages/EventsPage.vue'
 import HelpdeskPage from '@/features/helpdesk/pages/HelpdeskPage.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -31,6 +33,15 @@ const router = createRouter({
       path: '/agent',
       component: AgentPage,
       meta: { requiresAuth: true, role: 'agent' },
+    },
+    {
+      path: '/forgot-password',
+      component: ForgotPasswordPage,
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/reset-password',
+      component: ResetPasswordPage,
     },
   ],
 })
