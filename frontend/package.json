@@ -15,7 +15,11 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@tailwindcss/vite": "^4.2.1",
     "pinia": "^3.0.4",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.4",
     "vue": "^3.5.29",
     "vue-router": "^5.0.3"
   },
@@ -25,6 +29,7 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/tsconfig": "^0.8.1",
+    "autoprefixer": "^10.4.27",
     "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-oxlint": "~1.50.0",
@@ -32,7 +37,9 @@
     "jiti": "^2.6.1",
     "npm-run-all2": "^8.0.4",
     "oxlint": "~1.50.0",
+    "postcss": "^8.5.8",
     "prettier": "3.8.1",
+    "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.6",
