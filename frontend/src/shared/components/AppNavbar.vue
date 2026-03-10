@@ -20,7 +20,7 @@ async function logout() {
   <header class="w-full border-b bg-white">
     <div class="max-w-6xl mx-auto flex items-center justify-between h-14 px-4">
       <!-- left side -->
-      <div class="font-semibold text-lg">EventHelpdeskApp 1.0</div>
+      <div class="font-semibold text-lg">Events + Helpdesk App 1.0</div>
 
       <!-- center nav -->
       <nav class="flex gap-6" v-if="isUser">
