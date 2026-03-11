@@ -1,8 +1,88 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import ChatComposer from '@/shared/components/ChatComposer.vue'
+import ChatHeader from '@/shared/components/ChatHeader.vue'
+import ChatMessageList from '@/shared/components/ChatMessageList.vue'
+import ChatSidebar from '@/shared/components/ChatSidebar.vue'
+import { useHelpdeskConversations } from '@/shared/composables/useHelpdeskConversations'
+import { onMounted } from 'vue'
+
+const {
+  selectedChat,
+  selectedChatId,
+  searchTerm,
+  statusFilter,
+  draftMessage,
+  isLoadingList,
+  isLoadingDetail,
+  isSending,
+  isUpdatingStatus,
+  statusOptions,
+  ticketStatusOptions,
+  filteredChats,
+  loadChats,
+  handleSelectChat,
+  handleSendMessage,
+  handleStatusChange,
+  formatTime,
+  statusSeverity,
+} = useHelpdeskConversations()
+
+onMounted(async () => {
+  await loadChats()
+})
+</script>
 
 <template>
-  <div>Agent Page</div>
-  <div class="min-h-screen flex items-center justify-center bg-slate-100">
-    <h1 class="text-4xl font-bold text-blue-600">Tailwind működik</h1>
+  <div class="h-[calc(100vh-3.5rem)] min-h-[40rem] bg-slate-100 p-4 sm:p-6">
+    <div
+      class="grid h-full min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[22rem_minmax(0,1fr)]"
+    >
+      <ChatSidebar
+        :chats="filteredChats"
+        :selected-chat-id="selectedChatId"
+        :search-term="searchTerm"
+        :status-filter="statusFilter"
+        :status-options="statusOptions"
+        :format-time="formatTime"
+        :status-severity="statusSeverity"
+        @update:search-term="searchTerm = $event"
+        @update:status-filter="statusFilter = $event"
+        @select="handleSelectChat"
+      />
+
+      <section class="flex min-h-0 flex-1 flex-col bg-white">
+        <div
+          v-if="isLoadingList || isLoadingDetail"
+          class="flex flex-1 items-center justify-center text-sm text-slate-500"
+        >
+          Loading conversations...
+        </div>
+
+        <template v-else-if="selectedChat">
+          <ChatHeader
+            :chat="selectedChat"
+            :status-options="ticketStatusOptions"
+            :status-severity="statusSeverity"
+            @update:status="handleStatusChange"
+          />
+
+          <ChatMessageList :messages="selectedChat.messages" :format-time="formatTime" />
+
+          <ChatComposer
+            v-model="draftMessage"
+            :disabled="isSending || isUpdatingStatus"
+            @clear="draftMessage = ''"
+            @send="handleSendMessage"
+          />
+        </template>
+
+        <div
+          v-else
+          class="flex flex-1 items-center justify-center px-6 text-center text-sm text-slate-500"
+        >
+          No chat selected.
+        </div>
+      </section>
+    </div>
   </div>
 </template>

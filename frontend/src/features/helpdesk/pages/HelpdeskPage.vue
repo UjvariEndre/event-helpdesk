@@ -1,5 +1,92 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import ChatComposer from '@/shared/components/ChatComposer.vue'
+import ChatMessageList from '@/shared/components/ChatMessageList.vue'
+import { useHelpdeskConversations } from '@/shared/composables/useHelpdeskConversations'
+import Tag from 'primevue/tag'
+import { computed, onMounted } from 'vue'
+
+const {
+  selectedChat,
+  draftMessage,
+  isLoadingList,
+  isLoadingDetail,
+  isSending,
+  loadChats,
+  handleSendMessage,
+  formatTime,
+  statusSeverity,
+} = useHelpdeskConversations()
+
+const pageTitle = computed(() => selectedChat.value?.subject ?? 'Helpdesk conversation')
+const pageStatus = computed(() => selectedChat.value?.status ?? null)
+
+onMounted(async () => {
+  await loadChats()
+})
+</script>
 
 <template>
-  <div>Helpdesk Page</div>
+  <div class="h-[calc(100vh-3.5rem)] min-h-[40rem] bg-slate-100 p-4 sm:p-6">
+    <div
+      class="flex h-full min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+    >
+      <section class="flex min-h-0 flex-1 flex-col bg-white">
+        <div
+          v-if="isLoadingList || isLoadingDetail"
+          class="flex flex-1 items-center justify-center text-sm text-slate-500"
+        >
+          Loading conversation...
+        </div>
+
+        <template v-else-if="selectedChat">
+          <header class="border-b border-slate-200 bg-white px-5 py-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <div class="mb-2 flex flex-wrap items-center gap-3">
+                  <h1 class="truncate text-xl font-semibold text-slate-900">
+                    {{ pageTitle }}
+                  </h1>
+
+                  <Tag
+                    v-if="pageStatus"
+                    :severity="statusSeverity(pageStatus)"
+                    :value="pageStatus"
+                    rounded
+                  />
+                </div>
+
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
+                  <span>{{ selectedChat.user.email }}</span>
+                  <span>
+                    {{
+                      selectedChat.assignedAgent
+                        ? `Assigned to ${selectedChat.assignedAgent.name}`
+                        : 'Unassigned'
+                    }}
+                  </span>
+                  <span>Updated {{ formatTime(selectedChat.updatedAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <ChatMessageList :messages="selectedChat.messages" :format-time="formatTime" />
+
+          <ChatComposer
+            v-model="draftMessage"
+            :disabled="isSending"
+            @clear="draftMessage = ''"
+            @send="handleSendMessage"
+          />
+        </template>
+
+        <div
+          v-else
+          class="flex flex-1 items-center justify-center px-6 text-center text-sm text-slate-500"
+        >
+          No conversation available.
+        </div>
+      </section>
+    </div>
+  </div>
 </template>
