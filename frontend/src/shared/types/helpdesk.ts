@@ -4,8 +4,8 @@ export type SenderType = 'user' | 'agent' | 'assistant'
 
 export interface HelpdeskParticipant {
   id: string
-  name: string
   email: string
+  name?: string
 }
 
 export interface HelpdeskMessage {

@@ -1,7 +1,10 @@
 import type { Context } from "hono";
+import { ProfileRow } from "../types/chat.db";
 import { supabase } from "./supabase";
 
-export async function getUserFromRequest(c: Context) {
+export async function getUserFromRequest(
+  c: Context,
+): Promise<ProfileRow | null> {
   const authHeader = c.req.header("Authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -16,5 +19,15 @@ export async function getUserFromRequest(c: Context) {
     return null;
   }
 
-  return data.user;
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, email, role")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile) {
+    return null;
+  }
+
+  return profile as ProfileRow;
 }

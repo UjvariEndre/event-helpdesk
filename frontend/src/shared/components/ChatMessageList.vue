@@ -1,34 +1,46 @@
 <script setup lang="ts">
 import type { HelpdeskMessage, SenderType } from '@/shared/types/helpdesk'
+import { computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   messages: HelpdeskMessage[]
   formatTime: (value: string) => string
+  viewer?: 'user' | 'agent'
 }>()
 
+const currentViewer = computed(() => props.viewer ?? 'agent')
+
+function isOwnMessage(senderType: SenderType) {
+  if (senderType === 'assistant') {
+    return false
+  }
+
+  return senderType === currentViewer.value
+}
+
 function isRightAligned(senderType: SenderType) {
-  return senderType === 'agent'
+  return isOwnMessage(senderType)
 }
 
 function bubbleClasses(senderType: SenderType) {
-  if (senderType === 'agent') {
-    return 'bg-slate-900 text-white'
-  }
-
   if (senderType === 'assistant') {
     return 'bg-amber-50 text-slate-800 ring-1 ring-inset ring-amber-200'
+  }
+
+  if (isOwnMessage(senderType)) {
+    return 'bg-slate-900 text-white'
   }
 
   return 'bg-white text-slate-800 ring-1 ring-inset ring-slate-200'
 }
 
 function senderAccent(senderType: SenderType) {
-  if (senderType === 'agent') {
-    return 'text-slate-200'
-  }
-
   if (senderType === 'assistant') {
     return 'text-amber-700'
+  }
+
+  if (isOwnMessage(senderType)) {
+    return 'text-slate-200'
   }
 
   return 'text-slate-500'

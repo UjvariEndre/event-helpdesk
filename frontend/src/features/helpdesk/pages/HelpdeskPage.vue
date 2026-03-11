@@ -15,7 +15,7 @@ const {
   handleSendMessage,
   formatTime,
   statusSeverity,
-} = useHelpdeskConversations()
+} = useHelpdeskConversations({ mode: 'user' })
 
 const pageTitle = computed(() => selectedChat.value?.subject ?? 'Helpdesk conversation')
 const pageStatus = computed(() => selectedChat.value?.status ?? null)
@@ -70,7 +70,11 @@ onMounted(async () => {
             </div>
           </header>
 
-          <ChatMessageList :messages="selectedChat.messages" :format-time="formatTime" />
+          <ChatMessageList
+            :messages="selectedChat.messages"
+            :format-time="formatTime"
+            viewer="user"
+          />
 
           <ChatComposer
             v-model="draftMessage"
@@ -80,12 +84,20 @@ onMounted(async () => {
           />
         </template>
 
-        <div
-          v-else
-          class="flex flex-1 items-center justify-center px-6 text-center text-sm text-slate-500"
-        >
-          No conversation available.
-        </div>
+        <template v-else>
+          <div
+            class="flex flex-1 items-center justify-center px-6 text-center text-sm text-slate-500"
+          >
+            Start a new helpdesk conversation by sending your first message.
+          </div>
+
+          <ChatComposer
+            v-model="draftMessage"
+            :disabled="isSending"
+            @clear="draftMessage = ''"
+            @send="handleSendMessage"
+          />
+        </template>
       </section>
     </div>
   </div>

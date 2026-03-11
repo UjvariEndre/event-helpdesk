@@ -20,8 +20,8 @@ app.use(
 
 app.route("/health", health);
 app.route("/events", events);
-app.route("/api/agent/chats", agentChats);
-app.route("/api/helpdesk", helpdesk);
+app.route("/agent/chats", agentChats);
+app.route("/helpdesk", helpdesk);
 
 serve({
   fetch: app.fetch,

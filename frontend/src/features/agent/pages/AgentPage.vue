@@ -66,7 +66,11 @@ onMounted(async () => {
             @update:status="handleStatusChange"
           />
 
-          <ChatMessageList :messages="selectedChat.messages" :format-time="formatTime" />
+          <ChatMessageList
+            :messages="selectedChat.messages"
+            :format-time="formatTime"
+            viewer="agent"
+          />
 
           <ChatComposer
             v-model="draftMessage"
