@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { supabase } from '@/shared/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
+import { useQueryClient } from '@tanstack/vue-query'
 import Button from 'primevue/button'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const auth = useAuthStore()
-
+const queryClient = useQueryClient()
 const isUser = computed(() => auth.role === 'user')
 
 async function logout() {
   await supabase.auth.signOut()
-  router.push('/login')
+  queryClient.clear()
+  router.replace('/login')
 }
 </script>
 

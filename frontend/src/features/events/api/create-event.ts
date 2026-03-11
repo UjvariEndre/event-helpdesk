@@ -5,7 +5,6 @@ export type CreateEventPayload = {
   title: string
   description?: string
   occurrence: string
-  user_id: string
 }
 
 export function createEvent(payload: CreateEventPayload) {

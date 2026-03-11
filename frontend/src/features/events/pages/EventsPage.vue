@@ -30,9 +30,45 @@ const form = reactive({
   occurrence: new Date(),
 })
 
+const createErrorMessage = computed(() => {
+  const err = createEventMutation.error.value
+  return err instanceof Error ? err.message : 'Failed to create event'
+})
+
+const updateErrorMessage = computed(() => {
+  const err = updateEventMutation.error.value
+  return err instanceof Error ? err.message : 'Failed to update event'
+})
+
 const eventsQuery = useQuery({
-  queryKey: ['events'],
+  queryKey: ['events', authStore.user?.id],
   queryFn: getEvents,
+  enabled: !!authStore.user?.id,
+})
+
+const createEventMutation = useMutation({
+  mutationFn: async () => {
+    return createEvent({
+      title: form.title,
+      description: form.description,
+      occurrence: form.occurrence.toISOString(),
+    })
+  },
+  onSuccess: async () => {
+    await queryClient.invalidateQueries({ queryKey: ['events', authStore.user?.id] })
+
+    form.title = ''
+    form.description = ''
+    form.occurrence = new Date()
+    isCreateDialogOpen.value = false
+  },
+})
+
+const deleteEventMutation = useMutation({
+  mutationFn: deleteEvent,
+  onSuccess: async () => {
+    await queryClient.invalidateQueries({ queryKey: ['events', authStore.user?.id] })
+  },
 })
 
 function resetForm() {
@@ -45,48 +81,13 @@ function resetForm() {
   isCreateDialogOpen.value = false
 }
 
-const createEventMutation = useMutation({
-  mutationFn: async () => {
-    if (!authStore.user?.id) {
-      throw new Error('User not found')
-    }
-
-    return createEvent({
-      title: form.title,
-      description: form.description,
-      occurrence: form.occurrence.toISOString(),
-      user_id: authStore.user.id,
-    })
-  },
-  onSuccess: async () => {
-    await queryClient.invalidateQueries({ queryKey: ['events'] })
-
-    form.title = ''
-    form.description = ''
-    form.occurrence = new Date()
-    isCreateDialogOpen.value = false
-  },
-})
-
-const deleteEventMutation = useMutation({
-  mutationFn: deleteEvent,
-  onSuccess: async () => {
-    await queryClient.invalidateQueries({ queryKey: ['events'] })
-  },
-})
-
 const updateEventMutation = useMutation({
   mutationFn: updateEvent,
   onSuccess: async () => {
-    await queryClient.invalidateQueries({ queryKey: ['events'] })
+    await queryClient.invalidateQueries({ queryKey: ['events', authStore.user?.id] })
 
     resetForm()
   },
-})
-
-const createErrorMessage = computed(() => {
-  const err = createEventMutation.error.value
-  return err instanceof Error ? err.message : 'Failed to create event'
 })
 
 function handleDelete(id: string) {
@@ -120,6 +121,11 @@ function openEditDialog(event: EventItem) {
 
   isCreateDialogOpen.value = true
 }
+
+function openCreateDialog() {
+  resetForm()
+  isCreateDialogOpen.value = true
+}
 </script>
 
 <template>
@@ -129,7 +135,7 @@ function openEditDialog(event: EventItem) {
         <div class="flex items-center justify-between">
           <span>Events</span>
 
-          <Button label="Create event" icon="pi pi-plus" @click="isCreateDialogOpen = true" />
+          <Button label="Create event" icon="pi pi-plus" @click="openCreateDialog" />
         </div>
       </template>
 
@@ -211,8 +217,12 @@ function openEditDialog(event: EventItem) {
           />
         </div>
 
-        <Message v-if="createEventMutation.isError.value" severity="error">
+        <Message v-if="!isEditMode && createEventMutation.isError.value" severity="error">
           {{ createErrorMessage }}
+        </Message>
+
+        <Message v-if="isEditMode && updateEventMutation.isError.value" severity="error">
+          {{ updateErrorMessage }}
         </Message>
 
         <div class="flex justify-end">

@@ -1,11 +1,22 @@
 import { Hono } from "hono";
+import { getUserFromRequest } from "../lib/get-user-from-request";
 import { supabase } from "../lib/supabase";
 
 const events = new Hono();
 
 // GET
 events.get("/", async (c) => {
-  const { data, error } = await supabase.from("events").select("*");
+  const user = await getUserFromRequest(c);
+
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("occurrence", { ascending: true });
 
   if (error) {
     return c.json({ error: error.message }, 500);
@@ -16,12 +27,17 @@ events.get("/", async (c) => {
 
 // POST
 events.post("/", async (c) => {
+  const user = await getUserFromRequest(c);
+
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const body = await c.req.json();
+  const { title, description, occurrence } = body;
 
-  const { title, description, occurrence, user_id } = body;
-
-  if (!title || !occurrence || !user_id) {
-    return c.json({ error: "title, occurrence and user_id are required" }, 400);
+  if (!title || !occurrence) {
+    return c.json({ error: "title and occurrence are required" }, 400);
   }
 
   const { data, error } = await supabase
@@ -30,7 +46,7 @@ events.post("/", async (c) => {
       title,
       description: description ?? null,
       occurrence,
-      user_id,
+      user_id: user.id,
     })
     .select()
     .single();
@@ -44,6 +60,12 @@ events.post("/", async (c) => {
 
 // PATCH
 events.patch("/:id", async (c) => {
+  const user = await getUserFromRequest(c);
+
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const id = c.req.param("id");
   const body = await c.req.json();
   const { description } = body;
@@ -55,6 +77,7 @@ events.patch("/:id", async (c) => {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
+    .eq("user_id", user.id)
     .select()
     .single();
 
@@ -67,9 +90,19 @@ events.patch("/:id", async (c) => {
 
 // DELETE
 events.delete("/:id", async (c) => {
+  const user = await getUserFromRequest(c);
+
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
   const id = c.req.param("id");
 
-  const { error } = await supabase.from("events").delete().eq("id", id);
+  const { error } = await supabase
+    .from("events")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) {
     return c.json({ error: error.message }, 500);
