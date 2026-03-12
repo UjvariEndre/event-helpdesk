@@ -4,7 +4,7 @@ import ChatMessageList from '@/shared/components/ChatMessageList.vue'
 import { useHelpdeskConversations } from '@/shared/composables/useHelpdeskConversations'
 import { useVoiceHelpdesk } from '@/shared/composables/useVoiceHelpdesk'
 import Tag from 'primevue/tag'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const {
   selectedChat,
@@ -22,26 +22,6 @@ const { isSupported, isListening, start, stop, speak } = useVoiceHelpdesk(async 
   draftMessage.value = text
   await handleSendMessage()
 })
-
-watch(
-  () => {
-    const messages = selectedChat.value?.messages
-    return messages?.[messages.length - 1]
-  },
-  (lastMessage, previousMessage) => {
-    if (!lastMessage) {
-      return
-    }
-
-    if (lastMessage.id === previousMessage?.id) {
-      return
-    }
-
-    if (lastMessage.senderType === 'assistant') {
-      speak(lastMessage.content)
-    }
-  },
-)
 
 const pageTitle = computed(() => selectedChat.value?.subject ?? 'Helpdesk conversation')
 const pageStatus = computed(() => selectedChat.value?.status ?? null)
@@ -100,6 +80,8 @@ onMounted(async () => {
             :messages="selectedChat.messages"
             :format-time="formatTime"
             viewer="user"
+            :voice-enabled="isSupported"
+            @speak="speak"
           />
 
           <ChatComposer

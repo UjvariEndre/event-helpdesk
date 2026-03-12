@@ -11,7 +11,7 @@ import {
 const CHAT_SELECT =
   "id, user_id, status, subject, assigned_agent_id, created_at, updated_at";
 
-const PROFILE_SELECT = "id, email, role";
+const PROFILE_SELECT = "id, email, role, name";
 
 const MESSAGE_SELECT =
   "id, chat_id, sender_type, sender_user_id, content, created_at";
@@ -87,7 +87,9 @@ function getSenderLabel(
     return message.sender_type === "agent" ? "Agent" : "User";
   }
 
-  return profilesById.get(message.sender_user_id)?.email ?? "Unknown sender";
+  const profile = profilesById.get(message.sender_user_id);
+
+  return profile?.name?.trim() || profile?.email || "Unknown sender";
 }
 
 function toMessageDto(
@@ -119,6 +121,7 @@ function requireProfile(
   return {
     id: profile.id,
     email: profile.email,
+    name: profile.name ?? null,
   };
 }
 
@@ -140,6 +143,7 @@ export async function listAllChats() {
   const { data, error } = await supabase
     .from("chats")
     .select(CHAT_SELECT)
+    .not("assigned_agent_id", "is", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -356,7 +360,7 @@ export async function getChatMessages(chatId: string) {
 export async function getFirstAgentProfile() {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, role")
+    .select("id, email, role, name")
     .eq("role", "agent")
     .limit(1)
     .maybeSingle();

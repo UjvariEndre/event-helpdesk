@@ -20,7 +20,7 @@ export async function generateHelpdeskReply(input: {
   userMessage: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<HelpdeskAiResult> {
-  const { userMessage, history } = input;
+  const { userMessage } = input;
 
   if (wantsHuman(userMessage)) {
     return {

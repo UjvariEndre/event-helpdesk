@@ -4,6 +4,7 @@ export type ProfileRow = {
   id: string;
   email: string;
   role: "user" | "agent";
+  name: string | null;
 };
 
 export type ChatRow = {

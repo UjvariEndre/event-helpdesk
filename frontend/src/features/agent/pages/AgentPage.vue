@@ -69,6 +69,7 @@ onMounted(async () => {
           <ChatMessageList
             :messages="selectedChat.messages"
             :format-time="formatTime"
+            :voice-enabled="true"
             viewer="agent"
           />
 

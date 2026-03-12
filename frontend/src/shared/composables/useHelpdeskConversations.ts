@@ -8,7 +8,7 @@ import { getHelpdeskChat, postHelpdeskChatMessage } from '@/features/helpdesk/ap
 import { supabase } from '@/shared/lib/supabase'
 import type { ChatStatus, HelpdeskChatDetail, HelpdeskChatListItem } from '@/shared/types/helpdesk'
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 type UseHelpdeskConversationsOptions = {
   mode?: 'agent' | 'user'
@@ -54,6 +54,10 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
 
       return matchesStatus && matchesSearch
     })
+  })
+
+  onMounted(() => {
+    setupListRealtimeSubscription()
   })
 
   function upsertChatListItem(chat: HelpdeskChatDetail) {
@@ -109,6 +113,24 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     })()
 
     return refreshPromise
+  }
+
+  let listRefreshPromise: Promise<void> | null = null
+
+  async function refreshChatListFromServer() {
+    if (listRefreshPromise) {
+      return listRefreshPromise
+    }
+
+    listRefreshPromise = (async () => {
+      try {
+        await loadChats()
+      } finally {
+        listRefreshPromise = null
+      }
+    })()
+
+    return listRefreshPromise
   }
 
   function cleanupChatRealtimeSubscription() {
@@ -178,7 +200,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           table: 'chats',
         },
         async () => {
-          await loadChats()
+          await refreshChatListFromServer()
         },
       )
       .subscribe()
@@ -219,7 +241,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
       chats.value = result
 
       const hasSelectedChat =
-        selectedChatId.value && result.some((chat) => chat.id === selectedChatId.value)
+        !!selectedChatId.value && result.some((chat) => chat.id === selectedChatId.value)
 
       if (!hasSelectedChat) {
         const nextSelectedId = result[0]?.id ?? null
@@ -343,10 +365,9 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     { immediate: true },
   )
 
-  setupListRealtimeSubscription()
-
   onBeforeUnmount(() => {
     cleanupChatRealtimeSubscription()
+    cleanupListRealtimeSubscription()
   })
 
   return {

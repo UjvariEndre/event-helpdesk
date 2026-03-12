@@ -28,7 +28,6 @@ export async function initAuth(pinia: Pinia) {
   authStore.setLoading(false)
 
   supabase.auth.onAuthStateChange(async (event, session) => {
-    authStore.setLoading(true)
     authStore.setSession(session)
 
     if (event === 'PASSWORD_RECOVERY') {
@@ -45,7 +44,5 @@ export async function initAuth(pinia: Pinia) {
     } else {
       authStore.setRole(null)
     }
-
-    authStore.setLoading(false)
   })
 }

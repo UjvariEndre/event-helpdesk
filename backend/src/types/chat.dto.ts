@@ -2,12 +2,18 @@ export type ChatStatus = "open" | "pending" | "resolved";
 
 export type SenderType = "user" | "agent" | "assistant";
 
+type ChatParticipantDto = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
 export type ChatBaseDto = {
   id: string;
   subject: string;
   status: ChatStatus;
-  user: { id: string; email: string };
-  assignedAgent: { id: string; email: string } | null;
+  user: ChatParticipantDto;
+  assignedAgent: ChatParticipantDto | null;
   lastMessagePreview: string | null;
   createdAt: string;
   updatedAt: string;
