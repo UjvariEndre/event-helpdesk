@@ -75,6 +75,11 @@ onMounted(async () => {
           <ChatComposer
             v-model="draftMessage"
             :disabled="isSending || isUpdatingStatus"
+            :show-voice-button="true"
+            :is-voice-supported="false"
+            :is-listening="false"
+            placeholder="Write a reply to the user"
+            send-label="Send reply"
             @clear="draftMessage = ''"
             @send="handleSendMessage"
           />

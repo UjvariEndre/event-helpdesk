@@ -29,6 +29,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   const isUpdatingStatus = ref(false)
 
   let chatRealtimeChannel: RealtimeChannel | null = null
+  let listRealtimeChannel: RealtimeChannel | null = null
   let refreshPromise: Promise<void> | null = null
 
   const statusOptions = [
@@ -110,15 +111,22 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     return refreshPromise
   }
 
-  function cleanupRealtimeSubscription() {
+  function cleanupChatRealtimeSubscription() {
     if (chatRealtimeChannel) {
       supabase.removeChannel(chatRealtimeChannel)
       chatRealtimeChannel = null
     }
   }
 
-  function setupRealtimeSubscription(chatId: string | null) {
-    cleanupRealtimeSubscription()
+  function cleanupListRealtimeSubscription() {
+    if (listRealtimeChannel) {
+      supabase.removeChannel(listRealtimeChannel)
+      listRealtimeChannel = null
+    }
+  }
+
+  function setupChatRealtimeSubscription(chatId: string | null) {
+    cleanupChatRealtimeSubscription()
 
     if (!chatId) {
       return
@@ -148,6 +156,29 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
         },
         async () => {
           await refreshSelectedChatFromServer()
+        },
+      )
+      .subscribe()
+  }
+
+  function setupListRealtimeSubscription() {
+    cleanupListRealtimeSubscription()
+
+    if (mode !== 'agent') {
+      return
+    }
+
+    listRealtimeChannel = supabase
+      .channel('helpdesk-chat-list-agent')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chats',
+        },
+        async () => {
+          await loadChats()
         },
       )
       .subscribe()
@@ -187,17 +218,18 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
       const result = await getAgentChats()
       chats.value = result
 
-      const nextSelectedId =
+      const hasSelectedChat =
         selectedChatId.value && result.some((chat) => chat.id === selectedChatId.value)
-          ? selectedChatId.value
-          : (result[0]?.id ?? null)
 
-      selectedChatId.value = nextSelectedId
+      if (!hasSelectedChat) {
+        const nextSelectedId = result[0]?.id ?? null
+        selectedChatId.value = nextSelectedId
 
-      if (nextSelectedId) {
-        await loadChatDetail(nextSelectedId)
-      } else {
-        selectedChat.value = null
+        if (nextSelectedId) {
+          await loadChatDetail(nextSelectedId)
+        } else {
+          selectedChat.value = null
+        }
       }
     } finally {
       isLoadingList.value = false
@@ -306,13 +338,15 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   watch(
     selectedChatId,
     (chatId) => {
-      setupRealtimeSubscription(chatId)
+      setupChatRealtimeSubscription(chatId)
     },
     { immediate: true },
   )
 
+  setupListRealtimeSubscription()
+
   onBeforeUnmount(() => {
-    cleanupRealtimeSubscription()
+    cleanupChatRealtimeSubscription()
   })
 
   return {

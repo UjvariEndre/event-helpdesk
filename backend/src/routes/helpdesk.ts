@@ -2,11 +2,14 @@ import { Hono } from "hono";
 import {
   buildChatDetail,
   createUserChat,
+  getChatMessages,
+  getFirstAgentProfile,
   getLatestActiveChatForUser,
   insertChatMessage,
   updateChat,
 } from "../lib/chat-service";
 import { getUserFromRequest } from "../lib/get-user-from-request";
+import { generateHelpdeskReply } from "../lib/helpdesk-ai";
 
 const helpdesk = new Hono();
 
@@ -76,11 +79,56 @@ helpdesk.post("/chat/messages", async (c) => {
       content,
     });
 
-    const updatedChat = await updateChat({
-      chatId: chat.id,
-      status: existingChat?.status ?? "open",
-      assignedAgentId: chat.assigned_agent_id,
+    // If the chat is already assigned to an agent, we can skip the AI response
+    if (chat.assigned_agent_id) {
+      const updatedChat = await updateChat({
+        chatId: chat.id,
+        status: "open",
+        assignedAgentId: chat.assigned_agent_id,
+      });
+
+      return c.json(await buildChatDetail(updatedChat), 201);
+    }
+
+    const messages = await getChatMessages(chat.id);
+
+    const history = messages.map((message) => ({
+      role: message.sender_type === "assistant" ? "assistant" : "user",
+      content: message.content,
+    })) as Array<{ role: "user" | "assistant"; content: string }>;
+
+    const aiResult = await generateHelpdeskReply({
+      userMessage: content,
+      history,
     });
+
+    await insertChatMessage({
+      chatId: chat.id,
+      senderType: "assistant",
+      senderUserId: null,
+      content: aiResult.reply,
+    });
+
+    let updatedChat;
+
+    if (aiResult.shouldEscalate) {
+      const agent = await getFirstAgentProfile();
+
+      if (!agent) {
+        throw new Error("No helpdesk agent profile found for escalation");
+      }
+
+      updatedChat = await updateChat({
+        chatId: chat.id,
+        status: "open",
+        assignedAgentId: agent.id,
+      });
+    } else {
+      updatedChat = await updateChat({
+        chatId: chat.id,
+        status: "pending",
+      });
+    }
 
     return c.json(await buildChatDetail(updatedChat), 201);
   } catch (error) {

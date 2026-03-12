@@ -2,8 +2,9 @@
 import ChatComposer from '@/shared/components/ChatComposer.vue'
 import ChatMessageList from '@/shared/components/ChatMessageList.vue'
 import { useHelpdeskConversations } from '@/shared/composables/useHelpdeskConversations'
+import { useVoiceHelpdesk } from '@/shared/composables/useVoiceHelpdesk'
 import Tag from 'primevue/tag'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 const {
   selectedChat,
@@ -16,6 +17,31 @@ const {
   formatTime,
   statusSeverity,
 } = useHelpdeskConversations({ mode: 'user' })
+
+const { isSupported, isListening, start, stop, speak } = useVoiceHelpdesk(async (text) => {
+  draftMessage.value = text
+  await handleSendMessage()
+})
+
+watch(
+  () => {
+    const messages = selectedChat.value?.messages
+    return messages?.[messages.length - 1]
+  },
+  (lastMessage, previousMessage) => {
+    if (!lastMessage) {
+      return
+    }
+
+    if (lastMessage.id === previousMessage?.id) {
+      return
+    }
+
+    if (lastMessage.senderType === 'assistant') {
+      speak(lastMessage.content)
+    }
+  },
+)
 
 const pageTitle = computed(() => selectedChat.value?.subject ?? 'Helpdesk conversation')
 const pageStatus = computed(() => selectedChat.value?.status ?? null)
@@ -79,8 +105,14 @@ onMounted(async () => {
           <ChatComposer
             v-model="draftMessage"
             :disabled="isSending"
+            :show-voice-button="true"
+            :is-voice-supported="isSupported"
+            :is-listening="isListening"
+            placeholder="Describe your problem..."
+            send-label="Send message"
             @clear="draftMessage = ''"
             @send="handleSendMessage"
+            @voice-toggle="isListening ? stop() : start()"
           />
         </template>
 
@@ -94,8 +126,14 @@ onMounted(async () => {
           <ChatComposer
             v-model="draftMessage"
             :disabled="isSending"
+            :show-voice-button="true"
+            :is-voice-supported="isSupported"
+            :is-listening="isListening"
+            placeholder="Describe your problem..."
+            send-label="Send message"
             @clear="draftMessage = ''"
             @send="handleSendMessage"
+            @voice-toggle="isListening ? stop() : start()"
           />
         </template>
       </section>

@@ -338,3 +338,32 @@ export async function buildChatDetail(
     updatedAt: chatRow.updated_at,
   };
 }
+
+export async function getChatMessages(chatId: string) {
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .select(MESSAGE_SELECT)
+    .eq("chat_id", chatId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as ChatMessageRow[];
+}
+
+export async function getFirstAgentProfile() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, role")
+    .eq("role", "agent")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
