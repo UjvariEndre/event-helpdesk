@@ -52,7 +52,7 @@ onMounted(async () => {
 
       <section class="flex min-h-0 flex-1 flex-col bg-white">
         <div
-          v-if="isLoadingList || isLoadingDetail"
+          v-if="!selectedChat && (isLoadingList || isLoadingDetail)"
           class="flex flex-1 items-center justify-center text-sm text-slate-500"
         >
           Loading conversations...

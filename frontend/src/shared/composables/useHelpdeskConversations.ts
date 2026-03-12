@@ -24,6 +24,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   const statusFilter = ref<ChatStatus | 'all'>('all')
   const draftMessage = ref('')
   const isLoadingList = ref(false)
+  const isRefreshingList = ref(false)
   const isLoadingDetail = ref(false)
   const isSending = ref(false)
   const isUpdatingStatus = ref(false)
@@ -124,7 +125,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
 
     listRefreshPromise = (async () => {
       try {
-        await loadChats()
+        await loadChats({ silent: true })
       } finally {
         listRefreshPromise = null
       }
@@ -206,8 +207,14 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
       .subscribe()
   }
 
-  async function loadChats() {
-    isLoadingList.value = true
+  async function loadChats(options?: { silent?: boolean }) {
+    const silent = options?.silent ?? false
+
+    if (silent) {
+      isRefreshingList.value = true
+    } else {
+      isLoadingList.value = true
+    }
 
     try {
       if (mode === 'user') {
@@ -248,23 +255,32 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
         selectedChatId.value = nextSelectedId
 
         if (nextSelectedId) {
-          await loadChatDetail(nextSelectedId)
+          await loadChatDetail(nextSelectedId, { silent })
         } else {
           selectedChat.value = null
         }
       }
     } finally {
-      isLoadingList.value = false
+      if (silent) {
+        isRefreshingList.value = false
+      } else {
+        isLoadingList.value = false
+      }
     }
   }
 
-  async function loadChatDetail(chatId: string) {
+  async function loadChatDetail(chatId: string, options?: { silent?: boolean }) {
     if (mode === 'user') {
       return
     }
 
+    const silent = options?.silent ?? false
+
     selectedChatId.value = chatId
-    isLoadingDetail.value = true
+
+    if (!silent) {
+      isLoadingDetail.value = true
+    }
 
     try {
       selectedChat.value = await getAgentChatById(chatId)
