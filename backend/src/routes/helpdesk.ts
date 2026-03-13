@@ -18,6 +18,10 @@ const helpdesk = new Hono<AppEnv>();
 helpdesk.use("*", requireAuth);
 helpdesk.use("*", requireRole("user"));
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // GET
 helpdesk.get("/chat", async (c) => {
   const profile = c.get("user");
@@ -100,7 +104,15 @@ helpdesk.post("/chat/messages", async (c) => {
 
     let updatedChat;
 
-    if (aiResult.shouldEscalate) {
+    if (aiResult.shouldResolve) {
+      await delay(5000);
+
+      updatedChat = await updateChat({
+        chatId: chat.id,
+        status: "resolved",
+        assignedAgentId: null,
+      });
+    } else if (aiResult.shouldEscalate) {
       const agent = await getFirstAgentProfile();
 
       if (!agent) {
@@ -116,6 +128,7 @@ helpdesk.post("/chat/messages", async (c) => {
       updatedChat = await updateChat({
         chatId: chat.id,
         status: "pending",
+        assignedAgentId: null,
       });
     }
 
