@@ -5,7 +5,7 @@ import {
   postAgentChatMessage,
 } from '@/features/agent/api/agent-helpdesk'
 import { getHelpdeskChat, postHelpdeskChatMessage } from '@/features/helpdesk/api/helpdesk'
-import { supabase } from '@/shared/lib/supabase'
+import { supabase, syncRealtimeAuth } from '@/shared/lib/supabase'
 import type { ChatStatus, HelpdeskChatDetail, HelpdeskChatListItem } from '@/shared/types/helpdesk'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -59,7 +59,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   })
 
   onMounted(async () => {
-    setupListRealtimeSubscription()
+    await setupListRealtimeSubscription()
     await loadChats()
   })
 
@@ -174,12 +174,14 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     }, 150)
   }
 
-  function setupChatRealtimeSubscription(chatId: string | null) {
+  async function setupChatRealtimeSubscription(chatId: string | null) {
     cleanupChatRealtimeSubscription()
 
     if (!chatId) {
       return
     }
+
+    await syncRealtimeAuth()
 
     chatRealtimeChannel = supabase
       .channel(`helpdesk-chat-${mode}-${chatId}`)
@@ -226,12 +228,14 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     }, 250)
   }
 
-  function setupListRealtimeSubscription() {
+  async function setupListRealtimeSubscription() {
     cleanupListRealtimeSubscription()
 
     if (mode !== 'agent') {
       return
     }
+
+    await syncRealtimeAuth()
 
     listRealtimeChannel = supabase
       .channel('helpdesk-chat-list-agent')
@@ -422,7 +426,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   watch(
     selectedChatId,
     (chatId) => {
-      setupChatRealtimeSubscription(chatId)
+      void setupChatRealtimeSubscription(chatId)
     },
     { immediate: true },
   )

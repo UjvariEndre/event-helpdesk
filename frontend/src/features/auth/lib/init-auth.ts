@@ -1,5 +1,5 @@
 import router from '@/router'
-import { supabase } from '@/shared/lib/supabase'
+import { supabase, syncRealtimeAuth } from '@/shared/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import type { Pinia } from 'pinia'
 import { getMfaAal } from '../api/get-mfa-aal'
@@ -16,6 +16,7 @@ async function refreshAuthState(pinia: Pinia) {
     } = await supabase.auth.getSession()
 
     authStore.setSession(session)
+    await syncRealtimeAuth(session)
 
     if (!session?.user) {
       authStore.setRole(null)
@@ -66,6 +67,8 @@ export async function initAuth(pinia: Pinia) {
 
   supabase.auth.onAuthStateChange((event, session) => {
     authStore.setSession(session)
+
+    void syncRealtimeAuth(session)
 
     if (event === 'PASSWORD_RECOVERY') {
       authStore.setRecoveryMode(true)

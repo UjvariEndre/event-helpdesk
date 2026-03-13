@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { requireAuth, requireRole } from "../lib/auth-middleware";
 import {
   buildChatDetail,
   createUserChat,
@@ -12,6 +13,9 @@ import { generateHelpdeskReply } from "../lib/helpdesk-ai";
 import { AppEnv } from "../types/chat.db";
 
 const helpdesk = new Hono<AppEnv>();
+
+helpdesk.use("*", requireAuth);
+helpdesk.use("*", requireRole("user"));
 
 // GET
 helpdesk.get("/chat", async (c) => {

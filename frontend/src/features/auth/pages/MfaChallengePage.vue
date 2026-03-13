@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { supabase, syncRealtimeAuth } from '@/shared/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { useMutation } from '@tanstack/vue-query'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 import { computed, reactive, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMfaAal } from '../api/get-mfa-aal'
@@ -26,6 +28,12 @@ const mutation = useMutation({
       required: true,
       verified: aal.currentLevel === 'aal2',
     })
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    await syncRealtimeAuth(session)
 
     form.code = ''
 

@@ -4,7 +4,7 @@ import ChatMessageList from '@/shared/components/ChatMessageList.vue'
 import { useHelpdeskConversations } from '@/shared/composables/useHelpdeskConversations'
 import { useVoiceHelpdesk } from '@/shared/composables/useVoiceHelpdesk'
 import Tag from 'primevue/tag'
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 
 const {
   selectedChat,
@@ -12,7 +12,6 @@ const {
   isLoadingList,
   isLoadingDetail,
   isSending,
-  loadChats,
   handleSendMessage,
   formatTime,
   statusSeverity,
@@ -25,10 +24,6 @@ const { isSupported, isListening, start, stop, speak } = useVoiceHelpdesk(async 
 
 const pageTitle = computed(() => selectedChat.value?.subject ?? 'Helpdesk conversation')
 const pageStatus = computed(() => selectedChat.value?.status ?? null)
-
-onMounted(async () => {
-  await loadChats()
-})
 </script>
 
 <template>
