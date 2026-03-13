@@ -9,6 +9,7 @@ import {
   insertChatMessage,
   updateChat,
 } from "../lib/chat-service";
+import { generateChatTitleFromFirstMessage } from "../lib/chat-title";
 import { generateHelpdeskReply } from "../lib/helpdesk-ai";
 import { AppEnv } from "../types/chat.db";
 
@@ -53,10 +54,12 @@ helpdesk.post("/chat/messages", async (c) => {
     }
 
     const existingChat = await getLatestActiveChatForUser(profile.id);
-    const chat =
-      existingChat ??
-      // TODO: AI
-      (await createUserChat(profile.id, content));
+    let chat = existingChat;
+
+    if (!chat) {
+      const generatedTitle = await generateChatTitleFromFirstMessage(content);
+      chat = await createUserChat(profile.id, generatedTitle);
+    }
 
     await insertChatMessage({
       chatId: chat.id,

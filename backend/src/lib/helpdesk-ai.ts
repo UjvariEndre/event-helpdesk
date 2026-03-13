@@ -29,8 +29,8 @@ export async function generateHelpdeskReply(input: {
     };
   }
 
-  // Itt később mehet valódi LLM hívás.
-  // Első körben placeholder, hogy végig fusson a flow.
+  // A real LLM call can be added here later.
+  // For now, this is a placeholder so the flow can run end to end.
   const normalized = userMessage.toLowerCase();
 
   if (normalized.includes("event")) {
