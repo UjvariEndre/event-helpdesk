@@ -47,6 +47,10 @@ function buildFallbackTitle(message: string) {
       title: "Loading Issue",
     },
     {
+      regex: /\bevents\b|\bevent page\b|\bevent problem\b/,
+      title: "Events Issue",
+    },
+    {
       regex: /\berror\b|\bbug\b|\bissue\b|\bproblem\b/,
       title: "Application Issue",
     },

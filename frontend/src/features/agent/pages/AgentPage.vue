@@ -4,6 +4,7 @@ import ChatHeader from '@/shared/components/ChatHeader.vue'
 import ChatMessageList from '@/shared/components/ChatMessageList.vue'
 import ChatSidebar from '@/shared/components/ChatSidebar.vue'
 import { useHelpdeskConversations } from '@/shared/composables/useHelpdeskConversations'
+import { useVoiceHelpdesk } from '@/shared/composables/useVoiceHelpdesk'
 import { onMounted } from 'vue'
 
 const {
@@ -26,6 +27,8 @@ const {
   formatTime,
   statusSeverity,
 } = useHelpdeskConversations()
+
+const { isSupported, speak } = useVoiceHelpdesk(() => {})
 
 onMounted(async () => {
   await loadChats()
@@ -69,8 +72,9 @@ onMounted(async () => {
           <ChatMessageList
             :messages="selectedChat.messages"
             :format-time="formatTime"
-            :voice-enabled="true"
+            :voice-enabled="isSupported"
             viewer="agent"
+            @speak="speak"
           />
 
           <ChatComposer
