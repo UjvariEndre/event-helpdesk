@@ -15,6 +15,8 @@ type UseHelpdeskConversationsOptions = {
 }
 
 export function useHelpdeskConversations(options: UseHelpdeskConversationsOptions = {}) {
+  const isDev = import.meta.env.DEV
+
   const mode = options.mode ?? 'agent'
 
   const chats = ref<HelpdeskChatListItem[]>([])
@@ -194,7 +196,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           filter: `chat_id=eq.${chatId}`,
         },
         (payload) => {
-          console.log('[chat_messages event]', mode, chatId, payload)
+          if (isDev) console.log('[chat_messages event]', mode, chatId, payload)
           scheduleSelectedChatRefresh()
         },
       )
@@ -207,12 +209,12 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           filter: `id=eq.${chatId}`,
         },
         (payload) => {
-          console.log('[chats event]', mode, chatId, payload)
+          if (isDev) console.log('[chats event]', mode, chatId, payload)
           scheduleSelectedChatRefresh()
         },
       )
       .subscribe((status) => {
-        console.log('[chatRealtime]', chatId, status)
+        if (isDev) console.log('[chatRealtime]', chatId, status)
       })
   }
 
@@ -251,7 +253,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
         },
       )
       .subscribe((status) => {
-        console.log('[listRealtime]', status)
+        if (isDev) console.log('[listRealtime]', status)
       })
   }
 

@@ -9,10 +9,12 @@ import helpdesk from "./routes/helpdesk";
 
 const app = new Hono();
 
+const frontendOrigin = process.env.FRONTEND_ORIGIN!;
+
 app.use(
   "*",
   cors({
-    origin: "http://localhost:5173",
+    origin: frontendOrigin,
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
   }),
