@@ -9,6 +9,8 @@ type AuthState = {
   role: AppRole
   isLoading: boolean
   isRecoveryMode: boolean
+  isMfaRequiredForSession: boolean
+  isMfaVerifiedForSession: boolean
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -18,6 +20,8 @@ export const useAuthStore = defineStore('auth', {
     role: null,
     isLoading: true,
     isRecoveryMode: false,
+    isMfaRequiredForSession: false,
+    isMfaVerifiedForSession: false,
   }),
 
   actions: {
@@ -34,12 +38,18 @@ export const useAuthStore = defineStore('auth', {
     setRecoveryMode(value: boolean) {
       this.isRecoveryMode = value
     },
+    setMfaState(payload: { required: boolean; verified: boolean }) {
+      this.isMfaRequiredForSession = payload.required
+      this.isMfaVerifiedForSession = payload.verified
+    },
     clear() {
       this.session = null
       this.user = null
       this.role = null
       this.isLoading = false
       this.isRecoveryMode = false
+      this.isMfaRequiredForSession = false
+      this.isMfaVerifiedForSession = false
     },
   },
 })

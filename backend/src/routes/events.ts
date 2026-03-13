@@ -1,8 +1,12 @@
 import { Hono } from "hono";
+import { requireAuth, requireRole } from "../lib/auth-middleware";
 import { getUserFromRequest } from "../lib/get-user-from-request";
 import { supabase } from "../lib/supabase";
 
 const events = new Hono();
+
+events.use("*", requireAuth);
+events.use("*", requireRole("user"));
 
 // GET
 events.get("/", async (c) => {

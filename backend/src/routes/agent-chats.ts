@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { requireAuth, requireRole } from "../lib/auth-middleware";
 import {
   buildChatDetail,
   buildChatListItems,
@@ -7,26 +8,15 @@ import {
   listAllChats,
   updateChat,
 } from "../lib/chat-service";
-import { getUserFromRequest } from "../lib/get-user-from-request";
+import { AppEnv } from "../types/chat.db";
 
-const agentChats = new Hono();
+const agentChats = new Hono<AppEnv>();
 
-async function requireAgent(c: Parameters<typeof getUserFromRequest>[0]) {
-  const profile = await getUserFromRequest(c);
-
-  if (!profile) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  if (profile.role !== "agent") {
-    return c.json({ error: "Forbidden" }, 403);
-  }
-
-  return profile;
-}
+agentChats.use("*", requireAuth);
+agentChats.use("*", requireRole("agent"));
 
 agentChats.get("/", async (c) => {
-  const profile = await requireAgent(c);
+  const profile = c.get("user");
 
   if (profile instanceof Response) {
     return profile;
@@ -46,7 +36,7 @@ agentChats.get("/", async (c) => {
 });
 
 agentChats.get("/:chatId", async (c) => {
-  const profile = await requireAgent(c);
+  const profile = c.get("user");
 
   if (profile instanceof Response) {
     return profile;
@@ -72,7 +62,7 @@ agentChats.get("/:chatId", async (c) => {
 });
 
 agentChats.patch("/:chatId", async (c) => {
-  const profile = await requireAgent(c);
+  const profile = c.get("user");
 
   if (profile instanceof Response) {
     return profile;
@@ -112,7 +102,7 @@ agentChats.patch("/:chatId", async (c) => {
 });
 
 agentChats.post("/:chatId/messages", async (c) => {
-  const profile = await requireAgent(c);
+  const profile = c.get("user");
 
   if (profile instanceof Response) {
     return profile;

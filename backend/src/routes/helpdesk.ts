@@ -8,28 +8,14 @@ import {
   insertChatMessage,
   updateChat,
 } from "../lib/chat-service";
-import { getUserFromRequest } from "../lib/get-user-from-request";
 import { generateHelpdeskReply } from "../lib/helpdesk-ai";
+import { AppEnv } from "../types/chat.db";
 
-const helpdesk = new Hono();
-
-async function requireUser(c: Parameters<typeof getUserFromRequest>[0]) {
-  const profile = await getUserFromRequest(c);
-
-  if (!profile) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  if (profile.role !== "user") {
-    return c.json({ error: "Forbidden" }, 403);
-  }
-
-  return profile;
-}
+const helpdesk = new Hono<AppEnv>();
 
 // GET
 helpdesk.get("/chat", async (c) => {
-  const profile = await requireUser(c);
+  const profile = c.get("user");
 
   if (profile instanceof Response) {
     return profile;
@@ -52,11 +38,7 @@ helpdesk.get("/chat", async (c) => {
 
 // POST
 helpdesk.post("/chat/messages", async (c) => {
-  const profile = await requireUser(c);
-
-  if (profile instanceof Response) {
-    return profile;
-  }
+  const profile = c.get("user");
 
   try {
     const body = (await c.req.json()) as { content?: unknown };

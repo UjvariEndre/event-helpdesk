@@ -7,7 +7,8 @@ import Message from 'primevue/message'
 import Password from 'primevue/password'
 import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProfileRole } from '../api/get-profile-role'
+import { getMfaAal } from '../api/get-mfa-aal'
+import { getProfileAuthData } from '../api/get-profile-auth-data'
 import { login } from '../api/login'
 
 const router = useRouter()
@@ -29,9 +30,18 @@ const mutation = useMutation({
       return
     }
 
-    const role = await getProfileRole(userId)
+    const profile = await getProfileAuthData(userId)
 
-    if (role === 'agent') {
+    if (profile.mfaRequired) {
+      const aal = await getMfaAal()
+
+      if (aal.currentLevel !== 'aal2' && aal.nextLevel === 'aal2') {
+        await router.push('/mfa')
+        return
+      }
+    }
+
+    if (profile.role === 'agent') {
       await router.push('/agent')
       return
     }

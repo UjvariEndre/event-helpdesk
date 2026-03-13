@@ -21,7 +21,7 @@ export async function getUserFromRequest(
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, email, role")
+    .select("id, email, role, mfa_required")
     .eq("id", data.user.id)
     .maybeSingle();
 

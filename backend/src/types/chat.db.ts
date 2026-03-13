@@ -5,6 +5,7 @@ export type ProfileRow = {
   email: string;
   role: "user" | "agent";
   name: string | null;
+  mfa_required: boolean;
 };
 
 export type ChatRow = {
@@ -24,4 +25,10 @@ export type ChatMessageRow = {
   sender_user_id: string | null;
   content: string;
   created_at: string;
+};
+
+export type AppEnv = {
+  Variables: {
+    user: ProfileRow;
+  };
 };
