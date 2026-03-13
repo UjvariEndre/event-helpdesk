@@ -32,6 +32,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   let chatRealtimeChannel: RealtimeChannel | null = null
   let listRealtimeChannel: RealtimeChannel | null = null
   let refreshPromise: Promise<void> | null = null
+  let refreshQueued = false
 
   const statusOptions = [
     { label: 'All statuses', value: 'all' as const },
@@ -57,8 +58,9 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     })
   })
 
-  onMounted(() => {
+  onMounted(async () => {
     setupListRealtimeSubscription()
+    await loadChats()
   })
 
   function upsertChatListItem(chat: HelpdeskChatDetail) {
@@ -80,6 +82,7 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
 
   async function refreshSelectedChatFromServer() {
     if (refreshPromise) {
+      refreshQueued = true
       return refreshPromise
     }
 
@@ -105,11 +108,22 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           return
         }
 
-        const chat = await getAgentChatById(selectedChatId.value)
+        const requestedChatId = selectedChatId.value
+        const chat = await getAgentChatById(requestedChatId)
+
+        if (selectedChatId.value !== requestedChatId) {
+          return
+        }
+
         selectedChat.value = chat
         upsertChatListItem(chat)
       } finally {
         refreshPromise = null
+
+        if (refreshQueued) {
+          refreshQueued = false
+          void refreshSelectedChatFromServer()
+        }
       }
     })()
 
@@ -148,6 +162,18 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     }
   }
 
+  let selectedRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+  function scheduleSelectedChatRefresh() {
+    if (selectedRefreshTimer) {
+      clearTimeout(selectedRefreshTimer)
+    }
+
+    selectedRefreshTimer = setTimeout(() => {
+      void refreshSelectedChatFromServer()
+    }, 150)
+  }
+
   function setupChatRealtimeSubscription(chatId: string | null) {
     cleanupChatRealtimeSubscription()
 
@@ -165,8 +191,9 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           table: 'chat_messages',
           filter: `chat_id=eq.${chatId}`,
         },
-        async () => {
-          await refreshSelectedChatFromServer()
+        (payload) => {
+          console.log('[chat_messages event]', mode, chatId, payload)
+          scheduleSelectedChatRefresh()
         },
       )
       .on(
@@ -177,11 +204,26 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           table: 'chats',
           filter: `id=eq.${chatId}`,
         },
-        async () => {
-          await refreshSelectedChatFromServer()
+        (payload) => {
+          console.log('[chats event]', mode, chatId, payload)
+          scheduleSelectedChatRefresh()
         },
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[chatRealtime]', chatId, status)
+      })
+  }
+
+  let listRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+  function scheduleChatListRefresh() {
+    if (listRefreshTimer) {
+      clearTimeout(listRefreshTimer)
+    }
+
+    listRefreshTimer = setTimeout(() => {
+      void refreshChatListFromServer()
+    }, 250)
   }
 
   function setupListRealtimeSubscription() {
@@ -200,11 +242,13 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
           schema: 'public',
           table: 'chats',
         },
-        async () => {
-          await refreshChatListFromServer()
+        () => {
+          scheduleChatListRefresh()
         },
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[listRealtime]', status)
+      })
   }
 
   async function loadChats(options?: { silent?: boolean }) {
@@ -247,18 +291,12 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
       const result = await getAgentChats()
       chats.value = result
 
-      const hasSelectedChat =
-        !!selectedChatId.value && result.some((chat) => chat.id === selectedChatId.value)
+      const firstChat = result[0]
 
-      if (!hasSelectedChat) {
-        const nextSelectedId = result[0]?.id ?? null
+      if (!selectedChatId.value && firstChat) {
+        const nextSelectedId = firstChat.id
         selectedChatId.value = nextSelectedId
-
-        if (nextSelectedId) {
-          await loadChatDetail(nextSelectedId, { silent })
-        } else {
-          selectedChat.value = null
-        }
+        await loadChatDetail(nextSelectedId, { silent })
       }
     } finally {
       if (silent) {
@@ -285,7 +323,9 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     try {
       selectedChat.value = await getAgentChatById(chatId)
     } finally {
-      isLoadingDetail.value = false
+      if (!silent) {
+        isLoadingDetail.value = false
+      }
     }
   }
 
@@ -302,12 +342,15 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     await loadChatDetail(chatId)
   }
 
+  const sendError = ref<string | null>(null)
+
   async function handleSendMessage() {
-    if (!draftMessage.value.trim()) {
+    if (!draftMessage.value.trim() || isSending.value) {
       return
     }
 
     isSending.value = true
+    sendError.value = null
 
     try {
       if (mode === 'user') {
@@ -333,6 +376,9 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
       selectedChat.value = updatedChat
       upsertChatListItem(updatedChat)
       draftMessage.value = ''
+    } catch (error) {
+      console.error('handleSendMessage failed', error)
+      sendError.value = error instanceof Error ? error.message : 'Failed to send message'
     } finally {
       isSending.value = false
     }
@@ -382,6 +428,14 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
   )
 
   onBeforeUnmount(() => {
+    if (listRefreshTimer) {
+      clearTimeout(listRefreshTimer)
+    }
+
+    if (selectedRefreshTimer) {
+      clearTimeout(selectedRefreshTimer)
+    }
+
     cleanupChatRealtimeSubscription()
     cleanupListRealtimeSubscription()
   })
@@ -394,9 +448,11 @@ export function useHelpdeskConversations(options: UseHelpdeskConversationsOption
     statusFilter,
     draftMessage,
     isLoadingList,
+    isRefreshingList,
     isLoadingDetail,
     isSending,
     isUpdatingStatus,
+    sendError,
     statusOptions,
     ticketStatusOptions,
     filteredChats,
