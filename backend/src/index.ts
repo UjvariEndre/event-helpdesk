@@ -10,6 +10,7 @@ import helpdesk from "./routes/helpdesk";
 const app = new Hono();
 
 const frontendOrigin = process.env.FRONTEND_ORIGIN!;
+const port = Number(process.env.PORT ?? 3000);
 
 app.use(
   "*",
@@ -27,5 +28,5 @@ app.route("/helpdesk", helpdesk);
 
 serve({
   fetch: app.fetch,
-  port: 3000,
+  port,
 });
