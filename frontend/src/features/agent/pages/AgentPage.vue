@@ -84,7 +84,7 @@ onMounted(async () => {
             :is-voice-supported="false"
             :is-listening="false"
             placeholder="Write a reply to the user"
-            send-label="Send reply"
+            send-label="Send"
             @clear="draftMessage = ''"
             @send="handleSendMessage"
           />

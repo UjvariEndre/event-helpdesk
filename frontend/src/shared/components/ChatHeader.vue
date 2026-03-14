@@ -41,6 +41,7 @@ const emit = defineEmits<{
         <Select
           :model-value="chat.status"
           :options="statusOptions"
+          :disabled="chat.status === 'resolved'"
           option-label="label"
           option-value="value"
           class="w-full"

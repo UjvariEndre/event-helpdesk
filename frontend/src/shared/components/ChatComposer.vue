@@ -14,7 +14,7 @@ withDefaults(
   }>(),
   {
     disabled: false,
-    sendLabel: 'Send reply',
+    sendLabel: 'Send',
     placeholder: 'Write a reply to the user',
     showVoiceButton: false,
     isVoiceSupported: false,
@@ -68,7 +68,7 @@ const emit = defineEmits<{
         />
 
         <Button
-          label="Send reply"
+          label="Send"
           icon="pi pi-send"
           :disabled="disabled || !modelValue.trim()"
           @click="emit('send')"
